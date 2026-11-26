@@ -12,14 +12,14 @@ pnpm install
 pnpm skills:install --target ~/work/my-repo --collections toolbox,tstack,cursor-team-kit
 ```
 
-Add `--dry-run` to see what would change. `--skills a,b` adds single skills, and `--dest claude` or `--dest codex` writes to `.claude/skills` or `.codex/skills` instead of `.agents/skills`. The installer needs only Node 22, so `node scripts/install.mjs` works without `pnpm install`. It writes `<target>/.agents/agent-toolbox.json`, which records what was installed and from which commit. Commit the result in the target repo.
+Add `--dry-run` to see what would change. Select skills with `--collections` or `--skills`, or use `--all` to install every skill. `--skills a,b` adds single skills, and `--dest claude` or `--dest codex` writes to `.claude/skills` or `.codex/skills` instead of `.agents/skills`. The installer needs only Node 22, so `node scripts/install.mjs` works without `pnpm install`. It writes `<target>/.agents/agent-toolbox.json`, which records what was installed and from which commit. Commit the result in the target repo.
 
 Where each harness reads skills:
 
 | Harness | Reads |
 | --- | --- |
 | Claude Code | `.claude/skills` (use `--dest claude`) |
-| Codex | `.agents/skills` or `.codex/skills` in a repo: **UNCONFIRMED**. The Codex docs say `.agents/skills`, but this repo has not checked it in a live session. Check the loaded skills |
+| Codex | Use the default destination, `.agents/skills`. A reviewer also confirmed `.codex/skills` on Codex CLI 0.172.0. [Codex skill locations](https://learn.chatgpt.com/docs/build-skills#where-codex-loads-local-skills) |
 | T3 Code, Orca | The skills of the agent they run. Orca itself is **UNCONFIRMED**, see `.agents/skills/harness-map/references/orca.md` |
 | Cursor, Gemini CLI, Antigravity | `.agents/skills` |
 
@@ -60,7 +60,13 @@ pnpm skills:install --target ~/work/my-repo \
   --skills review-evidence,make-pr-easy-to-review,sol-loop,discover,subagent-routing,harness-map,babysit-pr,thermo-nuclear-code-quality-review
 ```
 
-The five after them are what the first three link to or rely on. `discover` runs first in a session and states what the agent can use.
+Run the starter command from the agent-toolbox checkout. The installer writes `agent-toolbox.json` next to `skills/` in the target. `node scripts/install.mjs` takes the same flags. Then open Codex in the target repo and invoke `$discover`.
+
+`$review-evidence` needs seeded demo data, a local backend, a test user, and a host allow list limited to the local app and test backend. The scripted route needs a checkout where `playwright` or `@playwright/test` resolves, Chromium installed, and `ffmpeg`, `ffprobe`, and `magick` on PATH.
+
+`$make-pr-easy-to-review` takes a PR URL or runs from its branch with `gh` authenticated. Agree on any history rewrite or force-push first.
+
+`$sol-loop` starts one read-only Sol reviewer. In Codex it uses native subagents when the session can select or inherit Sol. The model and tool are listed in Codex, and a full live run is **UNCONFIRMED**. The skill reports the blocker if no Sol route is available. A Sol verdict is separate from the repository's required approvals.
 
 ## Develop this repo
 
