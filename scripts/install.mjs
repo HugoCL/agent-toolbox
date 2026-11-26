@@ -1,10 +1,10 @@
 #!/usr/bin/env node
 // Copies skill folders from this repo into another repo, so its agents share the same workflows.
 //
-//   pnpm skills:install --target <dir> [--collections a,b] [--skills x,y]
+//   pnpm skills:install --target <dir> (--collections a,b and/or --skills x,y | --all)
 //                       [--dest agents|claude|codex] [--dry-run] [--force]
 //
-// --collections and --skills are added together; with neither, every skill is installed.
+// --collections and --skills are added together. Use --all to install every skill.
 // --dest picks <target>/.agents/skills (default), <target>/.claude/skills or <target>/.codex/skills.
 //
 // A destination skill folder that differs from this repo is never overwritten without --force, and
@@ -21,13 +21,17 @@ import { execFileSync } from "node:child_process";
 import {
   cpSync,
   existsSync,
+  lstatSync,
   mkdirSync,
+  mkdtempSync,
   readFileSync,
+  realpathSync,
+  renameSync,
   rmSync,
   statSync,
   writeFileSync,
 } from "node:fs";
-import { dirname, join, resolve } from "node:path";
+import { basename, dirname, join, resolve } from "node:path";
 import {
   filesAt,
   hashFile,
@@ -54,6 +58,7 @@ function parseArgs(argv) {
     const arg = argv[i];
     if (arg === "--dry-run") options.dryRun = true;
     else if (arg === "--force") options.force = true;
+    else if (arg === "--all") options.all = true;
     else if (arg.startsWith("--") && takesValue.has(arg.slice(2))) {
       const value = argv[i + 1];
       if (value === undefined || value.startsWith("--"))
@@ -72,22 +77,31 @@ const list = (value) =>
     .filter(Boolean);
 
 const options = parseArgs(process.argv.slice(2));
-if (!options.target) fail("--target <dir> is required");
-if (!DEST_DIRS[options.dest])
+if (!Object.hasOwn(DEST_DIRS, options.dest))
   fail(`--dest must be one of ${Object.keys(DEST_DIRS).join(", ")}`);
+const wantedCollections = list(options.collections);
+const wantedSkills = list(options.skills);
+if (options.collections !== undefined && !wantedCollections.length)
+  fail("--collections must name at least one collection");
+if (options.skills !== undefined && !wantedSkills.length)
+  fail("--skills must name at least one skill");
+if (!options.all && !wantedCollections.length && !wantedSkills.length)
+  fail("Usage: pnpm skills:install --target <dir> with --collections a,b, --skills x,y, or --all");
+if (options.all && (wantedCollections.length || wantedSkills.length))
+  fail("--all cannot be combined with --collections or --skills");
+if (!options.target) fail("--target <dir> is required");
 
-const target = resolve(options.target);
+let target = resolve(options.target);
 if (!existsSync(target) || !statSync(target).isDirectory())
   fail(`target ${target} is not a directory`);
-if (target === ROOT) fail("the target is this repo itself");
+target = realpathSync(target);
+if (target === realpathSync(ROOT)) fail("the target is this repo itself");
 
 const manifest = readManifest();
 const { owners } = ownership(manifest, readLock());
 const allSkills = [...owners.keys()].sort();
 
 // Which skills.
-const wantedCollections = list(options.collections);
-const wantedSkills = list(options.skills);
 for (const id of wantedCollections)
   if (!manifest.some((c) => c.id === id))
     fail(
@@ -95,10 +109,9 @@ for (const id of wantedCollections)
     );
 for (const name of wantedSkills)
   if (!owners.has(name)) fail(`unknown skill "${name}"`);
-const everything = wantedCollections.length === 0 && wantedSkills.length === 0;
 const selected = allSkills.filter(
   (name) =>
-    everything ||
+    options.all ||
     wantedSkills.includes(name) ||
     wantedCollections.includes(owners.get(name).id),
 );
@@ -106,11 +119,22 @@ for (const name of selected)
   if (!existsSync(join(SKILLS_DIR, name, "SKILL.md")))
     fail(`.agents/skills/${name} is missing in this repo. Run: pnpm skills:sync`);
 
+// Check from the target outward before inspecting or writing any destination entry.
+function destinationEntry(path, type) {
+  const parent = dirname(path);
+  if (parent !== target && !destinationEntry(parent, "directory")) return undefined;
+  const entry = lstatSync(path, { throwIfNoEntry: false });
+  if (entry?.isSymbolicLink()) fail(`refusing destination symlink at ${path}`);
+  if (entry && !(type === "directory" ? entry.isDirectory() : entry.isFile()))
+    fail(`destination ${path} must be a ${type}`);
+  return entry;
+}
+
 // Where things go.
 const destDir = join(target, DEST_DIRS[options.dest]);
 const skillsDest = join(destDir, "skills");
 const manifestPath = join(destDir, MANIFEST_NAME);
-const previous = existsSync(manifestPath)
+const previous = destinationEntry(manifestPath, "file")
   ? JSON.parse(readFileSync(manifestPath, "utf8"))
   : { installed: {}, extras: {} };
 
@@ -122,7 +146,7 @@ for (const name of selected) {
   const to = join(skillsDest, name);
   const sourceHash = hashSkillDir(from);
   let action = "new";
-  if (existsSync(to)) {
+  if (destinationEntry(to, "directory")) {
     const current = hashSkillDir(to);
     if (current === sourceHash) action = "unchanged";
     else if (options.force) action = "overwrite";
@@ -162,7 +186,7 @@ for (const collection of manifest) {
       const to = join(destDir, fileRel);
       const sourceHash = hashFile(from);
       let action = "new";
-      if (existsSync(to)) {
+      if (destinationEntry(to, "file")) {
         if (hashFile(to) === sourceHash) action = "unchanged";
         else action = options.force ? "overwrite" : "refused (modified here)";
       }
@@ -236,17 +260,41 @@ if (options.dryRun) {
 }
 
 const skipJunk = (source) => !source.endsWith(".DS_Store");
-for (const p of changes) {
-  if (p.kind === "skill") {
-    rmSync(p.to, { recursive: true, force: true });
-    mkdirSync(dirname(p.to), { recursive: true });
-    cpSync(p.from, p.to, { recursive: true, filter: skipJunk });
-  } else {
-    mkdirSync(dirname(p.to), { recursive: true });
-    cpSync(p.from, p.to);
+
+function installSkill({ from, to, action }) {
+  const staging = mkdtempSync(join(dirname(to), `.${basename(to)}-`));
+  const replacement = join(staging, "new");
+  const backup = join(staging, "old");
+  let keepBackup = false;
+  try {
+    cpSync(from, replacement, { recursive: true, filter: skipJunk });
+    if (action === "overwrite") renameSync(to, backup);
+    try {
+      renameSync(replacement, to);
+    } catch (error) {
+      if (action === "overwrite") {
+        try {
+          renameSync(backup, to);
+        } catch (restoreError) {
+          keepBackup = true;
+          throw new AggregateError([error, restoreError], `Could not restore ${to}; old copy is at ${backup}`);
+        }
+      }
+      throw error;
+    }
+  } finally {
+    if (!keepBackup) rmSync(staging, { recursive: true, force: true });
   }
 }
+
+for (const p of changes) {
+  destinationEntry(p.to, p.kind === "skill" ? "directory" : "file");
+  mkdirSync(dirname(p.to), { recursive: true });
+  if (p.kind === "skill") installSkill(p);
+  else cpSync(p.from, p.to);
+}
 if (manifestChanged) {
+  destinationEntry(manifestPath, "file");
   mkdirSync(destDir, { recursive: true });
   writeFileSync(manifestPath, manifestText);
 }
