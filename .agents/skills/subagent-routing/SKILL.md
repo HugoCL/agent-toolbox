@@ -36,7 +36,9 @@ What OpenAI says about these models (Codex models page, November 2026):
 - Sol is for everyday coding and writing. Astra is for demanding projects.
 - Luna is the most efficient, for focused high-volume tasks. It supports effort up to Max, and OpenAI says to start it at High.
 - Terra is fast, for clear writing, visual understanding and computer use.
-- Effort levels are Light (Low in the CLI), Medium, High, Extra High, Max and Ultra. Ultra uses subagents, so do not give Ultra to a role that must not start subagents, such as the `$sol-loop` reviewer.
+- Effort levels are Light (Low in the CLI), Medium, High, Extra High, Max and Ultra. Ultra uses subagents.
+
+Ultra uses subagents, so do not give it to a role that must not start them, such as the `$sol-loop` reviewer, which allows one reviewer and no subagents.
 
 ## Profile `mixed`
 
@@ -61,6 +63,17 @@ Give the reviewer the diff and the original goal, never the author's conclusion,
 `mixed`: always add a read-only adversarial reviewer on the same model as the parent, then GPT Sol and Claude Opus. If the parent is Sol or Opus, it fills its own seat and the other model fills the second. If only one of the two is available, use it and keep the parent-model seat when distinct.
 
 Report missing seats and any effort level the harness cannot set.
+
+## Roles that pstack skills name
+
+`poteto-mode`, `arena`, `swarm` and `interrogate` name roles that have no row above. Map them like this:
+
+| Role named by the skill | `openai-only` | `mixed` |
+| --- | --- | --- |
+| Code, prose and judgment | Sol, high | Implementation row |
+| Trivial mechanical edits, `swarm` workers | Luna, start at high | Simple, low-risk row |
+| Panel seats, `arena` runners, `interrogate` reviewers | Sol and Astra, plus Terra for visual work, each as a separate fresh-context run | The review seats |
+| `arena` judge | Astra with a fresh context and an adversarial brief. The skill wants a judge from another vendor: with one provider that check cannot run, so say so | A model from a different vendor than the parent |
 
 ## Fallback order
 

@@ -51,16 +51,16 @@ The generated catalog, with limits and local patches, is in `docs/skills.md`.
 
 ## Start with these three
 
-1. `review-evidence`: proof that a change works, attached to the PR.
+1. `review-evidence`: evidence for a review. Read its `SKILL.md`.
 2. `make-pr-easy-to-review`: shapes the branch and PR so a person can review it.
 3. `sol-loop`: a Sol reviewer checks the change in a loop before the PR.
 
 ```sh
 pnpm skills:install --target ~/work/my-repo \
-  --skills review-evidence,make-pr-easy-to-review,sol-loop,discover,subagent-routing,harness-map
+  --skills review-evidence,make-pr-easy-to-review,sol-loop,discover,subagent-routing,harness-map,babysit-pr,thermo-nuclear-code-quality-review
 ```
 
-The last three are what the first three rely on. `discover` runs first in a session and states what the agent can use.
+The five after them are what the first three link to or rely on. `discover` runs first in a session and states what the agent can use.
 
 ## Develop this repo
 
