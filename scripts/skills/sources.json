@@ -1,0 +1,149 @@
+[
+  {
+    "id": "toolbox",
+    "title": "Toolbox (first-party)",
+    "local": true,
+    "skills": [
+      "discover",
+      "harness-map",
+      "review-evidence",
+      "subagent-routing"
+    ],
+    "license": {
+      "spdx": "MIT"
+    },
+    "notes": [
+      "Written and edited in place under `.agents/skills/<name>/`. `pnpm skills:sync` never touches these folders, they are not in `skills-lock.json` and they get no content hash check. `pnpm skills:check` still validates their frontmatter (`name` matches the folder, `description` is not empty).",
+      "`discover`, `subagent-routing` and `harness-map` are written here. `review-evidence` is written separately and only listed."
+    ],
+    "limitations": []
+  },
+  {
+    "id": "pstack",
+    "title": "pstack (Claude Code tree)",
+    "upstream": "https://github.com/cursor/plugins",
+    "source": "https://github.com/cursor/plugins/tree/main/harness/pstack/claude-code",
+    "skills": "*",
+    "license": {
+      "spdx": "MIT",
+      "upstreamPath": "harness/pstack/claude-code/LICENSE"
+    },
+    "extras": [
+      {
+        "from": "harness/pstack/claude-code/docs/harness/claude-code.md",
+        "to": ".agents/docs/harness/claude-code.md"
+      },
+      {
+        "from": "harness/pstack/claude-code/agents",
+        "to": ".agents/agents"
+      }
+    ],
+    "notes": [
+      "All 59 skills of the generated Claude Code tree (`harness/pstack/claude-code`) of `cursor/plugins`. The Cursor-native tree and the finografic port are not used.",
+      "`docs/harness/claude-code.md` is copied to `.agents/docs/harness/` so the link `../../docs/harness/claude-code.md` in `poteto-mode/SKILL.md` resolves. The two custom agents go to `.agents/agents/`."
+    ],
+    "limitations": [
+      "Role models are hardcoded to Claude and Gemini slugs. Local patches on `poteto-mode`, `arena` and `swarm` (listed above) say that model choice here comes from `$subagent-routing` after `$discover`. The playbooks `bug-fix`, `perf-issue`, `hillclimb` and `eval` name a \"configured\" model with a Claude default and rely on the `poteto-mode` paragraph. `.agents/agents/poteto-agent.md` is an extra, which patches do not reach: its `model: claude-opus-5-5-xhigh-fast` stays.",
+      "`poteto-mode` and `poteto-help` spawn `poteto-agent` subagents (the adapter names it `pstack:poteto-agent`). The definition (`.agents/agents/poteto-agent.md`) is a Claude Code custom-agent file. Claude Code resolves `pstack:poteto-agent` and `pstack:comment-sicko` only with the pstack plugin installed: without it, translate the definition into a native `Agent` call (brief, model and effort), as `$harness-map` describes. `.agents/agents/` is also where Antigravity looks for custom agents, but these files are in Claude Code format, so do not expect them to work there as they are.",
+      "`poteto-mode`, its playbooks (`shipping`, `opening-a-pr`, `autopilot-full`) and `poteto-help` name `deslop`, `control-ui` and `control-cli` from Cursor's `cursor-team-kit` plugin. Those three are vendored in the `cursor-team-kit` collection of this repo, so the names resolve. Installing `pstack` without `cursor-team-kit` leaves them dangling.",
+      "Subagent steps (`how`, `no-comments`, `swarm`, `arena`, `poteto-mode`) are written for Cursor's `Task` tool. `.agents/docs/harness/claude-code.md` maps them to Claude Code. There is no mapping for Codex, so use the harness's own subagent tool, or do the step inline.",
+      "`poteto-help` links the pstack README and `docs/guide/*.md` (`../../README.md`, `../../docs/guide/01-setup.md`, ...). Those files are not vendored, so the links are dead here. Read them on the upstream repo.",
+      "`setup-pstack` writes `~/.cursor/rules/pstack-models.mdc`, a Cursor user path outside the repo. Do not run it here: `$subagent-routing` is the source of model choices.",
+      "`poteto-mode/scripts/` (`watch-pr`, `bootstrap.ts`, `package.json`, `bun.lock`) needs Bun, and `statechart/scripts/statechart` needs Node 22.18 or newer, or Bun 1.1.15 or newer.",
+      "All 59 skills set `disable-model-invocation: true`, a Claude Code frontmatter key. Invoke them by name with `$`.",
+      "`poteto-mode` tells the agent to read the Claude Code adapter (`.agents/docs/harness/claude-code.md`), which maps Cursor tool names to Claude Code names (`Task` to `Agent`, `AskQuestion` to `AskUserQuestion`). It is written for Claude Code, so the mapping only holds on Claude models."
+    ]
+  },
+  {
+    "id": "cursor-team-kit",
+    "title": "Cursor Team Kit",
+    "upstream": "https://github.com/cursor/plugins",
+    "source": "https://github.com/cursor/plugins/tree/main/cursor-team-kit/skills",
+    "skills": [
+      "thermo-nuclear-code-quality-review",
+      "make-pr-easy-to-review",
+      "deslop",
+      "control-ui",
+      "control-cli"
+    ],
+    "license": {
+      "spdx": "MIT",
+      "upstreamPath": "cursor-team-kit/LICENSE"
+    },
+    "notes": [
+      "Five skills of the `cursor-team-kit` plugin in `cursor/plugins` (`cursor-team-kit/skills/`): `thermo-nuclear-code-quality-review`, `make-pr-easy-to-review`, `deslop`, `control-ui` and `control-cli`. They are the ones `pstack` points at (`deslop`, `control-ui`, `control-cli`) plus the two review and PR-hygiene skills. The plugin's other skills, its agents (`agents/thermo-nuclear-code-quality-review.md`), rules and assets are not vendored."
+    ],
+    "limitations": [
+      "`thermo-nuclear-code-quality-review` sets `disable-model-invocation: true`, a Claude Code frontmatter key, so invoke it by name with `$thermo-nuclear-code-quality-review`. Upstream also ships a subagent definition for it (`agents/thermo-nuclear-code-quality-review.md`) that is not vendored, so it runs as a plain skill in the current thread. It is deliberately harsh: it treats a file growing past 1000 lines and any new ad-hoc branching as presumptive blockers.",
+      "`make-pr-easy-to-review` can rewrite history and force-push a PR branch. It tells the agent to propose a plan first and to rewrite only when the user agrees. It needs an authenticated `gh` and a PR to work on.",
+      "`deslop` diffs the branch against `main` and edits the files in place. It has no extra files and no tool requirements.",
+      "`control-ui` builds or adapts a local browser harness (Playwright by default, Chromium remote debugging for Electron). It refers to a `verify-this` skill that is not vendored, writes screenshots to `/tmp`, and needs a browser: `$discover` reports whether Playwright resolves.",
+      "`control-cli` drives interactive CLIs and TUIs through `tmux`, a PTY script (Python, Node or Expect) and the Node inspector. `tmux` has to be on the machine, and asciinema is only mentioned as optional.",
+      "Each of the five is a single `SKILL.md` with no scripts or references. They are written for Cursor's agent but name no Cursor-only tool or path."
+    ]
+  },
+  {
+    "id": "tstack",
+    "title": "tstack",
+    "upstream": "https://github.com/t3dotgg/tstack",
+    "source": "https://github.com/t3dotgg/tstack",
+    "skills": [
+      "babysit-pr",
+      "file-pr",
+      "leaving-pr-comments",
+      "modernize",
+      "sol-loop",
+      "takeover"
+    ],
+    "license": {
+      "spdx": "MIT",
+      "upstreamPath": "LICENSE"
+    },
+    "limitations": [
+      "`sol-loop` uses T3 Code's `orchestrator_capabilities` and `delegate_task` to reach a Sol model. Elsewhere it needs a Sol subagent, or it reports the blocker.",
+      "`babysit-pr` uses T3 Code's `watch_pull_request`, and falls back to `scripts/pr-wait` everywhere else. `pr-wait` needs Python 3 and an authenticated `gh`."
+    ],
+    "notes": [
+      "Six of the nine skills of `t3dotgg/tstack`: `babysit-pr`, `file-pr`, `leaving-pr-comments`, `modernize`, `sol-loop`, `takeover`. `council` and `full-send` are left out because the team's models all come from one provider, and `full-stop` only wraps `full-send`."
+    ]
+  },
+  {
+    "id": "superpowers",
+    "title": "Superpowers",
+    "upstream": "https://github.com/obra/superpowers",
+    "source": "https://github.com/obra/superpowers",
+    "skills": "*",
+    "license": {
+      "spdx": "MIT",
+      "upstreamPath": "LICENSE"
+    },
+    "limitations": [
+      "`using-superpowers` tells the agent to invoke a skill when there is a 1% chance one applies. Installed next to the other collections it pushes the agent to load skills it would not otherwise, so leave it out with `--skills` if that is too much.",
+      "`subagent-driven-development`, `dispatching-parallel-agents` and `requesting-code-review` need a subagent tool, which `$discover` reports. Their examples name no tool.",
+      "`brainstorming` ships `scripts/` for a browser companion (`server.cjs`, `start-server.sh`, `stop-server.sh`) that runs a local web server, and `writing-skills` ships `render-graphs.js`. Neither runs unless the skill's own steps are followed.",
+      "`using-superpowers/references/` holds tool maps for several harnesses (Claude Code, Codex, Gemini, Antigravity, Pi, Hermes, Muse). Orca is not among them."
+    ],
+    "notes": [
+      "All 15 skills under `skills/` of `obra/superpowers`. The repo's plugin manifests for each harness, hooks and docs are not vendored."
+    ]
+  },
+  {
+    "id": "ponytail",
+    "title": "Ponytail (skills only)",
+    "upstream": "https://github.com/DietrichGebert/ponytail",
+    "source": "https://github.com/DietrichGebert/ponytail",
+    "skills": "*",
+    "license": {
+      "spdx": "MIT",
+      "upstreamPath": "LICENSE"
+    },
+    "notes": [
+      "Only the six skills (`ponytail`, `ponytail-review`, `ponytail-audit`, `ponytail-debt`, `ponytail-gain`, `ponytail-help`). No lifecycle hooks, status line, band, or root AGENTS.md rules are installed."
+    ],
+    "limitations": [
+      "`ponytail-help` documents `/ponytail band` as a Claude Code feature (the Band section). Without the hooks it is not installed here, so those commands do nothing.",
+      "`ponytail-gain` reports figures from a headless Claude benchmark of Ponytail 5. They are not measurements of this repo.",
+      "Upstream also ships always-on rules (AGENTS.md, `.agents/rules/ponytail.md`) that are not copied. Ponytail only runs when you invoke a `$ponytail*` skill."
+    ]
+  }
+]
