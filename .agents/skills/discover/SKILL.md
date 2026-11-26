@@ -15,7 +15,7 @@ Check before you assume. A skill may name a model, a tool, a merge rule or a bro
    node .agents/skills/discover/scripts/discover.mjs
    ```
 
-   If the skills live elsewhere (`.claude/skills`, `.codex/skills`, a global folder), run the script from there with the repo as the working directory. Each probe is `{ ok: true, value }` or `{ ok: false, reason }`. `ok: false` means absent or unreadable, and the reason says which. The probes are listed in [probes](references/probes.md).
+   For a PR, get its `baseRefName` and pass `--base <branch>` to the script. If the skills live elsewhere (`.claude/skills`, `.codex/skills`, a global folder), run the script from there with the repo as the working directory. Each probe is `{ ok: true, value }` or `{ ok: false, reason }`. `ok: false` means absent or unreadable, and the reason says which. The probes are listed in [probes](references/probes.md).
 2. Read what the script cannot see from your own tool list: the subagent tool, the live model list and its providers, and any browser or computer-use tool. How: [session capabilities](references/session.md).
 3. State the capabilities block below, then continue.
 
@@ -36,9 +36,9 @@ Capabilities
 - Harness: <name, from the tool list; env hint if any>
 - Subagents: <tool name, or none>
 - Providers and models: <from the live list>; review diversity: <multi-provider | single-provider>
-- Browser / computer use: <tool, or none>; local: <ffmpeg, ffprobe, magick, Playwright, agent-browser: yes/no each>
+- Browser / computer use: <tool, or none>; local: <ffmpeg, ffprobe, magick, Playwright package or unavailable, playwright-core if present, agent-browser: yes/no>
 - Git and GitHub: <repo, remote, default branch>; gh: <authenticated or not>
-- Merge rule: <required approvals, required checks, merge queue; complete or partial>
+- Merge rule: <branch read, required approvals, required checks, merge queue, complete or partial with unsupported parameters>
 - Merge methods: <allowed>; CODEOWNERS: <yes/no>; PR template: <yes/no>; AGENTS.md: <yes/no>
 - Next: <the routing profile from $subagent-routing, and what you will do first>
 ```

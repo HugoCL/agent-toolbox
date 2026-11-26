@@ -2,20 +2,20 @@
 
 ## Reading `mergeRequirements`
 
-The probe combines three sources for the default branch: classic branch protection, active rulesets, and the merge queue (GraphQL).
+The probe combines classic branch protection, active rulesets, and the merge queue (GraphQL). Pass `--base <branch>` for the PR's actual base. With no base supplied, the probe uses the repository's default branch. Read `branch` and `branchSource` in the result.
 
-- `requiredApprovals.atLeast` is the highest approval count found. `exact: true` means every source was readable, so the number is the requirement. `exact: false` means at least one source was not, so the real requirement may be higher. Never read `atLeast: 0` with `exact: false` as "no approval needed".
-- `sources.branchProtection.state` is `rule`, `none` (GitHub answered "Branch not protected") or `cannot-read` (403 or another 404). `none` is a real answer. `cannot-read` is not.
-- `ok: false` means neither protection nor rulesets could be read.
+- `requiredApprovals.atLeast` is the highest approval count found. With `exact: true`, the sources were readable and the review conditions were understood. With `exact: false`, the real requirement may be higher or include additional conditions, even when `atLeast` is zero.
+- `unsupported` lists review conditions the probe cannot fully evaluate, such as code-owner review, approval of the most recent reviewable push, or review-thread resolution. An entry makes the result partial.
+- `sources.branchProtection.state` is `rule`, `none` (GitHub answered "Branch not protected") or `cannot-read` (403 or another 404).
+- `ok: false` means the probe could establish neither protection nor rulesets.
 - `requiredStatusChecks` lists the check names the branch requires. `mergeQueue: true` means a PR merges through the queue.
 
 ## What an agent does
 
-1. The probe is `exact: true` with N approvals required: merge only when the PR already has N approving reviews from accounts that are not the agent's, all required checks are green, and the user asked for the merge.
-2. The probe is `exact: true` with 0 required: the repo does not require a review. Merge only when the user asked for it, and say that no review was required.
-3. The rule cannot be fully read (`ok: false`, or any `exact: false`, whatever `atLeast` says): require at least one human approval, or `atLeast` if that is higher. Stop with the PR ready and say what is missing.
-4. A merge queue: enqueue the PR (for example `gh pr merge --auto`) only under the same conditions. Do not bypass the queue.
-5. Use a merge method from `mergeMethods.allowed`. If the repo's AGENTS.md or a CODEOWNERS rule says more, follow it.
+1. Before any merge or enqueue, run `gh pr view <n> --json reviewDecision,mergeStateStatus,baseRefName`. Check that the probe covers this base and rerun it with `--base` if needed. The probe describes the branch. The PR check decides whether this PR can proceed. Stop when the PR state indicates a blocker or cannot be verified.
+2. When reviews are required or the rule is partial or unreadable, stop with the PR ready unless its `reviewDecision` is `APPROVED`. Verify the required approving reviews are present and come from accounts other than the agent's. For a partial or unreadable rule, require at least one human approval, or the reported minimum if it is higher.
+3. Merge only after the required checks are green and the user has asked for the merge. With an exact count of zero, say that the repository required no approval.
+4. If the branch uses a merge queue, enqueue the PR only under these same conditions. Follow the repository's merge methods and any additional instructions in its AGENTS.md or CODEOWNERS rules.
 
 ## Never
 

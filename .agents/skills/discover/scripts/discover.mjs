@@ -10,9 +10,11 @@ import { spawnSync } from "node:child_process";
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { createRequire } from "node:module";
 import { join } from "node:path";
+import { parseArgs } from "node:util";
 
 const cwd = process.cwd();
 const TIMEOUT_MS = 10_000;
+let requestedBase;
 
 const ok = (value) => ({ ok: true, value });
 const no = (reason) => ({ ok: false, reason });
@@ -158,9 +160,35 @@ function defaultBranch() {
   );
 }
 
+function mergeBase() {
+  return remember("mergeBase", () =>
+    requestedBase ? ok({ name: requestedBase, source: "--base" }) : defaultBranch(),
+  );
+}
+
 function branchName() {
-  const d = defaultBranch();
-  return d.ok ? d.value.name : null;
+  return mergeBase().value?.name ?? null;
+}
+
+const CLASSIC_REVIEW_FIELDS = new Set([
+  "url", "dismissal_restrictions", "bypass_pull_request_allowances",
+  "required_approving_review_count",
+]);
+const RULESET_REVIEW_FIELDS = new Set([
+  "allowed_merge_methods", "required_approving_review_count",
+]);
+const OPTIONAL_REVIEW_FLAGS = new Set([
+  "dismiss_stale_reviews", "dismiss_stale_reviews_on_push",
+  "require_code_owner_reviews", "require_code_owner_review",
+  "require_last_push_approval", "required_review_thread_resolution",
+]);
+
+function unsupportedReviewFields(fields, modeled, prefix) {
+  return Object.entries(fields ?? {})
+    .filter(([name, value]) =>
+      !modeled.has(name) && !(OPTIONAL_REVIEW_FLAGS.has(name) && value === false),
+    )
+    .map(([name]) => `${prefix}.${name}`);
 }
 
 // Classic branch protection: { state: "rule" | "none" | "cannot-read", ... }.
@@ -169,15 +197,19 @@ function classicProtection() {
     const t = target();
     const branch = branchName();
     if (t.reason || !branch)
-      return { state: "cannot-read", detail: t.reason ?? "no default branch" };
-    const r = ghApi(`${repoPath(t)}/branches/${encodeURI(branch)}/protection`);
+      return { state: "cannot-read", detail: t.reason ?? "no base branch" };
+    const r = ghApi(`${repoPath(t)}/branches/${encodeURIComponent(branch)}/protection`);
     if (r.data) {
       const reviews = r.data.required_pull_request_reviews;
       const checks = r.data.required_status_checks;
+      const unsupported = unsupportedReviewFields(reviews, CLASSIC_REVIEW_FIELDS, "branchProtection");
+      if (r.data.required_conversation_resolution?.enabled)
+        unsupported.push("branchProtection.required_conversation_resolution");
       return {
         state: "rule",
         approvals: reviews?.required_approving_review_count ?? 0,
         codeOwnerReview: reviews?.require_code_owner_reviews ?? false,
+        unsupported,
         statusChecks: checks
           ? [
               ...new Set([
@@ -203,22 +235,30 @@ function rulesets() {
     const t = target();
     const branch = branchName();
     if (t.reason || !branch)
-      return { state: "cannot-read", detail: t.reason ?? "no default branch" };
-    const r = ghApi(`${repoPath(t)}/rules/branches/${encodeURI(branch)}`);
-    if (!Array.isArray(r.data))
+      return { state: "cannot-read", detail: t.reason ?? "no base branch" };
+    const r = ghApi(`${repoPath(t)}/rules/branches/${encodeURIComponent(branch)}`, [
+      "--paginate", "--slurp",
+    ]);
+    if (!Array.isArray(r.data) || r.data.length === 0 || !r.data.every(Array.isArray))
       return { state: "cannot-read", detail: `HTTP ${r.status ?? "?"}: ${r.message}` };
-    if (r.data.length === 0) return { state: "none" };
+    const rules = r.data.flat();
+    if (rules.length === 0) return { state: "none" };
     const approvals = [];
+    const unsupported = [];
     const checks = [];
     let queue = false;
     let codeOwnerReview = false;
     let methods = null;
-    for (const rule of r.data) {
+    for (const rule of rules) {
       const p = rule.parameters ?? {};
       if (rule.type === "pull_request") {
         approvals.push(p.required_approving_review_count ?? 0);
+        unsupported.push(...unsupportedReviewFields(p, RULESET_REVIEW_FIELDS, "pull_request"));
         codeOwnerReview ||= p.require_code_owner_review ?? false;
-        if (p.allowed_merge_methods) methods = p.allowed_merge_methods;
+        if (p.allowed_merge_methods)
+          methods = methods === null
+            ? p.allowed_merge_methods
+            : methods.filter((method) => p.allowed_merge_methods.includes(method));
       }
       if (rule.type === "required_status_checks")
         for (const c of p.required_status_checks ?? []) checks.push(c.context);
@@ -226,9 +266,10 @@ function rulesets() {
     }
     return {
       state: "rules",
-      ruleTypes: [...new Set(r.data.map((rule) => rule.type))].sort(),
+      ruleTypes: [...new Set(rules.map((rule) => rule.type))].sort(),
       approvals: approvals.length ? Math.max(...approvals) : 0,
       codeOwnerReview,
+      unsupported,
       statusChecks: [...new Set(checks)],
       mergeQueue: queue,
       allowedMergeMethods: methods,
@@ -251,29 +292,35 @@ function mergeQueueGraphql() {
     "-F",
     `b=${branch}`,
   ]);
-  if (!r.data?.data?.repository) return null;
-  return r.data.data.repository.mergeQueue !== null;
+  const repo = r.data?.data?.repository;
+  if (r.data?.errors?.length || !repo || !Object.hasOwn(repo, "mergeQueue")) return null;
+  return repo.mergeQueue !== null;
 }
 
 function mergeRequirements() {
   const t = target();
-  if (t.reason) return no(t.reason);
+  const { name: branch, source: branchSource } = mergeBase().value ?? {};
+  if (t.reason || !branch)
+    return { ...no(t.reason ?? "cannot determine base branch"), branch: branch ?? null };
   const classic = classicProtection();
   const sets = rulesets();
   const queue = mergeQueueGraphql();
   const unreadable = [];
+  if (branchSource.startsWith("local ")) unreadable.push("default branch from GitHub");
   if (classic.state === "cannot-read")
     unreadable.push(`branch protection (${classic.detail})`);
   if (sets.state === "cannot-read") unreadable.push(`rulesets (${sets.detail})`);
   if (queue === null) unreadable.push("merge queue (graphql)");
   if (classic.state === "cannot-read" && sets.state === "cannot-read")
-    return no(`cannot read the rules: ${unreadable.join("; ")}`);
+    return { ...no(`cannot read the rules: ${unreadable.join("; ")}`), branch, branchSource };
 
   const readable = [classic, sets].filter((s) => s.state !== "cannot-read");
   const approvals = Math.max(0, ...readable.map((s) => s.approvals ?? 0));
-  const complete = unreadable.length === 0;
+  const unsupported = [...new Set(readable.flatMap((s) => s.unsupported ?? []))].sort();
+  const complete = unreadable.length === 0 && unsupported.length === 0;
   return ok({
-    branch: branchName(),
+    branch,
+    branchSource,
     // Never read this as "no approval needed" unless `complete` is true and the number is 0.
     requiredApprovals: { atLeast: approvals, exact: complete },
     requiredStatusChecks: [
@@ -285,6 +332,7 @@ function mergeRequirements() {
     sources: { branchProtection: classic, rulesets: sets },
     complete,
     unreadable,
+    unsupported,
   });
 }
 
@@ -365,16 +413,20 @@ function agentBrowser() {
   return no("not found on PATH or in node_modules/.bin");
 }
 
-function playwright() {
-  const require = createRequire(join(cwd, "noop.js"));
-  for (const name of ["playwright", "playwright-core", "@playwright/test"]) {
+function playwright(packages) {
+  const require = createRequire(join(cwd, "package.json"));
+  for (const name of packages) {
     try {
-      const file = require.resolve(`${name}/package.json`);
-      const version = JSON.parse(readFileSync(file, "utf8")).version;
+      require.resolve(name);
+      let version = null;
+      try {
+        const file = require.resolve(`${name}/package.json`);
+        version = JSON.parse(readFileSync(file, "utf8")).version ?? null;
+      } catch {}
       return ok({ package: name, version });
     } catch {}
   }
-  return no(`not resolvable from ${cwd}`);
+  return no(`${packages.join(" or ")} not resolvable from ${cwd}`);
 }
 
 // --- harness hints -----------------------------------------------------------------------
@@ -427,7 +479,9 @@ function main() {
     ffmpeg: probe(() => tool("ffmpeg")),
     ffprobe: probe(() => tool("ffprobe")),
     magick: probe(() => tool("magick")),
-    playwright: probe(playwright),
+    // Keep this list aligned with review-evidence/scripts/browser.mjs.
+    playwright: probe(() => playwright(["playwright", "@playwright/test"])),
+    playwrightCore: probe(() => playwright(["playwright-core"])),
     agentBrowser: probe(agentBrowser),
     harnessHints: probe(harnessHints),
   };
@@ -442,6 +496,9 @@ function main() {
 
 let output;
 try {
+  const { values } = parseArgs({ options: { base: { type: "string" } } });
+  if (values.base !== undefined && !values.base.trim()) throw new Error("--base needs a branch name");
+  requestedBase = values.base;
   output = main();
 } catch (error) {
   output = { script: "discover.mjs", cwd, error: String(error?.message ?? error), probes: {} };
