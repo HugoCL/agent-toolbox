@@ -144,6 +144,7 @@ Local patches (applied by `pnpm skills:sync` after fetching upstream, kept in `s
 
 - `arena`, `1-route-models-via-subagent-routing.patch`: Runner and judge defaults are Claude and Gemini slugs read from a Cursor-only rule file; here they come from subagent-routing.
 - `poteto-mode`, `1-route-models-via-subagent-routing.patch`: Role models are hardcoded to Claude and Gemini slugs; here model choice comes from the live model list through subagent-routing.
+- `poteto-mode`, `2-require-repository-approvals.patch`: Require repository approvals before landing or enqueueing a verified PR.
 - `swarm`, `1-route-models-via-subagent-routing.patch`: Worker default is a Claude slug read from a Cursor-only rule file; here it comes from subagent-routing.
 
 Limitations:
@@ -178,6 +179,10 @@ Limitations:
 Selection:
 
 - Six of the nine skills of `t3dotgg/tstack`: `babysit-pr`, `file-pr`, `leaving-pr-comments`, `modernize`, `sol-loop`, `takeover`. `council` and `full-send` are left out because the team's models all come from one provider, and `full-stop` only wraps `full-send`.
+
+Local patches (applied by `pnpm skills:sync` after fetching upstream, kept in `scripts/skills/patches/`):
+
+- `babysit-pr`, `1-require-repository-approvals.patch`: Keep the waiter's monitoring result separate from the repository approval gate.
 
 Limitations:
 

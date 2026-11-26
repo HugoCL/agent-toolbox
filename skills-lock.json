@@ -40,8 +40,14 @@
       "commit": "11e37a74d0a6868c121cd0910ab2b3bd9873b92a",
       "sourceType": "github",
       "skillPath": "skills/babysit-pr/SKILL.md",
-      "computedHash": "b6f349b95dbf4cce64cf61608b4ed9a98ce3725afe29676e6614efc8dccb5c29",
-      "installMode": "copy"
+      "computedHash": "fde445d21a14482c65f0f92d93f23698dcf0af1253dbe42e628d829d3417729b",
+      "installMode": "copy",
+      "patches": [
+        {
+          "file": "1-require-repository-approvals.patch",
+          "sha256": "fc104a6c03019690507d9cbd923414a94a25c48c6077930ce99d0fa2d764e115"
+        }
+      ]
     },
     "benchmark-checklist": {
       "source": "cursor/plugins",
@@ -364,12 +370,16 @@
       "commit": "b7b93c36be9bcc36a74db438e0fd385d660bc559",
       "sourceType": "github",
       "skillPath": "harness/pstack/claude-code/skills/poteto-mode/SKILL.md",
-      "computedHash": "4622187d95a9c1f157276a89360da88a738061696c520916ff58e931ed05a534",
+      "computedHash": "dab7c9e0cd993797def940c45f1430a7e943fc04b9fc0d4a27dd1f22d9a49b87",
       "installMode": "copy",
       "patches": [
         {
           "file": "1-route-models-via-subagent-routing.patch",
           "sha256": "921cc4eea020ce7f5e8aaf24150591ca42dd74fbc46a9edd4e020d0d6efd255a"
+        },
+        {
+          "file": "2-require-repository-approvals.patch",
+          "sha256": "9554aed4b1af2abd192e5c586395152945db5b9f1c4e78f2fda4b6ce6fb51aa3"
         }
       ]
     },

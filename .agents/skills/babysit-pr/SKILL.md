@@ -108,6 +108,10 @@ before you call the PR ready.
 If an overlapping PR makes this one obsolete, stop monitoring, report it to the
 user, and ask before closing the PR unless closure was explicitly authorized.
 
+The waiter's exit 0 reports a monitoring result, and in this repo you may merge or
+enqueue only with the repository's required approvals (see the merge rule in
+`$discover`), stopping with the PR ready when approvals are missing.
+
 If nothing has changed, stay quiet rather than posting filler comments. Stop
 when `pr-wait` exits 0, or in T3 Code when the merge gate passes on the latest
 head. Merge only when the user explicitly requested it;
