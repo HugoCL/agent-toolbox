@@ -4,10 +4,11 @@ import { connect } from "node:net";
 import { once } from "node:events";
 import { resolve } from "node:path";
 
-export const LOOPBACK = ["localhost", "127.0.0.1", "[::1]"];
+const LOOPBACK = ["localhost", "127.0.0.1", "[::1]"];
 
 export function chromiumFromProject() {
   const require = createRequire(resolve("package.json"));
+  // Keep this list aligned with discover/scripts/discover.mjs.
   for (const name of ["playwright", "@playwright/test"]) {
     try {
       return require(name).chromium;
@@ -24,6 +25,11 @@ export function appUrl(value) {
     throw new Error("The app URL must use HTTP(S) on localhost, 127.0.0.1, or [::1], with no credentials in the URL.");
   }
   return url;
+}
+
+export function hostPort(url) {
+  const defaultPort = ["https:", "wss:"].includes(url.protocol) ? 443 : 80;
+  return `${url.hostname}:${url.port || defaultPort}`;
 }
 
 async function startFence(isAllowed) {
@@ -106,7 +112,7 @@ export async function withBrowser(callback, allowedHosts) {
     throw new Error("allowedHosts must be an array of exact hostnames or host:port entries.");
   }
   const allowed = new Set(allowedHosts.map(host => host.toLowerCase()));
-  const isAllowed = url => allowed.has(url.hostname) || allowed.has(url.host);
+  const isAllowed = url => allowed.has(url.hostname) || allowed.has(hostPort(url));
   let rejectFence;
   const violation = new Promise((_, reject) => { rejectFence = reject; });
   function rejectAppRequest(url) {

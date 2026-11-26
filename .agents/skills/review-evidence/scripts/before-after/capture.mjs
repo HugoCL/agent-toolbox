@@ -1,7 +1,7 @@
 import { mkdir, mkdtemp, rename, rm } from "node:fs/promises";
 import { dirname, resolve, join } from "node:path";
 import { pathToFileURL } from "node:url";
-import { appUrl, LOOPBACK, withBrowser } from "../browser.mjs";
+import { appUrl, hostPort, withBrowser } from "../browser.mjs";
 import { readScenes } from "./scenes.mjs";
 
 const [config, before, after, output, prepareModule] = process.argv.slice(2);
@@ -40,7 +40,7 @@ try {
         }
       }
     }
-  }, plan.allowedHosts ?? LOOPBACK);
+  }, plan.allowedHosts ?? Object.values(targets).map(hostPort));
   await mkdir(output, { recursive: true });
   for (const scene of plan.scenes) {
     for (const side of ["before", "after"]) {

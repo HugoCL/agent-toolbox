@@ -2,7 +2,7 @@ import { mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { setTimeout as sleep } from "node:timers/promises";
-import { appUrl, LOOPBACK, withBrowser } from "./browser.mjs";
+import { appUrl, hostPort, withBrowser } from "./browser.mjs";
 import { dimensions, FPS, mp4Options, requireBinary, run, writeMedia } from "./media.mjs";
 
 const SCALE = 2;
@@ -241,9 +241,10 @@ async function encode({ frames, captions, startedAt, endedAt }, viewport, output
 
 export async function record({
   baseUrl, output, viewport = { width: 864, height: 540 },
-  allowedHosts = LOOPBACK, auth, prepare, scenario,
+  allowedHosts, auth, prepare, scenario,
 }) {
-  baseUrl = appUrl(baseUrl).href;
+  const app = appUrl(baseUrl);
+  baseUrl = app.href;
   if (typeof output !== "string" || !output.toLowerCase().endsWith(".mp4")) throw new Error("Set output to an .mp4 path.");
   if (typeof scenario !== "function") throw new Error("Provide a scenario callback.");
   dimensions(viewport.width, viewport.height, { even: false });
@@ -251,7 +252,7 @@ export async function record({
   output = resolve(output);
   const directory = await mkdtemp(join(tmpdir(), "review-evidence-"));
   try {
-    const take = await withBrowser(newContext => capture(newContext, { baseUrl, viewport, auth, prepare, scenario }, directory), allowedHosts);
+    const take = await withBrowser(newContext => capture(newContext, { baseUrl, viewport, auth, prepare, scenario }, directory), allowedHosts ?? [hostPort(app)]);
     await encode(take, viewport, output, directory);
   } finally {
     await rm(directory, { recursive: true, force: true });

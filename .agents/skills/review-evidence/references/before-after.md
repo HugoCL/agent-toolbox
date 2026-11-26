@@ -21,7 +21,7 @@ Use an output ending in `.png` with an extra time in seconds to render a single 
 
 ## Configure a capture
 
-Copy [example/scenes.json](../scripts/example/scenes.json). Options at the top level include even output dimensions `width` and `height`, a default CSS `viewport`, optional `labels` with `before` and `after` text, `locale`, `timezoneId`, `allowedHosts` as in the recorder, and MP4 `crf` (default 15).
+Copy [example/scenes.json](../scripts/example/scenes.json). Options at the top level include even output dimensions `width` and `height`, a default CSS `viewport`, optional `labels` with `before` and `after` text, `locale`, `timezoneId`, `allowedHosts` as in the recorder, and MP4 `crf` (default 15). The default network fence allows only the host and effective port of each input URL for HTTP(S) and WebSocket traffic. If either version uses a separate test backend, list both app addresses and the backend as `host:port` entries in `allowedHosts`.
 
 Each scene needs a unique lowercase `id`. Set `mode` to `wipe` or `side-by-side` and add a short `caption`. The following fields are optional.
 

@@ -26,7 +26,7 @@ Import `record` from [scripts/recorder.mjs](../scripts/recorder.mjs) in a scenar
 |---|---|
 | `baseUrl` and `output` | Loopback HTTP(S) app URL and an MP4 path. Write reviewer evidence outside the checkout. |
 | `viewport` | CSS width and height. The default is 864×540. Output uses twice the width and twice the height plus a 128-pixel caption strip. |
-| `allowedHosts` | Exact hostnames or host:port entries for browser HTTP(S) and WebSocket traffic. Defaults to all ports on `localhost`, `127.0.0.1`, and `[::1]`. Supply a narrower list for a specific app and backend. For default ports use the hostname. |
+| `allowedHosts` | Exact hostnames or host:port entries for browser HTTP(S) and WebSocket traffic. Defaults to the hostname and effective port of `baseUrl` (80 for HTTP, 443 for HTTPS when omitted). To use a backend on another port, list both the app and test backend as `host:port` entries. A bare hostname explicitly allows every port on that host. |
 | `auth`, `prepare` | Optional async callbacks receiving `{ page, baseUrl }`. They run in that order after opening the URL and before the scenario. |
 | `scenario` | Async callback receiving `{ page, baseUrl, clickOn, dragTo, zoomOn, caption, wait, startCapture }`. See the [example](../scripts/example/scenario.mjs). |
 
