@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<title>Before and after</title>
+<style>
+  * { box-sizing: border-box }
+  body { margin: 0; width: 100vw; height: 100vh; display: grid; grid-template-rows: 1fr 11vh;
+    background: #151823; color: white; font: 600 3vh/1.2 system-ui, sans-serif }
+  #stage { min-height: 0; display: grid; place-items: center; padding: 7vh 2vw 2vh }
+  #images { position: relative; display: flex; align-items: center; gap: 2vw }
+  .pane { position: relative; overflow: hidden }
+  img { display: block; width: 100%; height: 100% }
+  .wipe .after { position: absolute; inset: 0 }
+  .divider { position: absolute; top: 0; bottom: 0; border-left: 3px solid white; filter: drop-shadow(0 0 2px black) }
+  .label { position: absolute; bottom: calc(100% + 1vh); padding: .6vh 1vw; border-radius: .6vh; background: #151823;
+    color: white; font-size: 2.5vh; white-space: nowrap }
+  .before-label { left: 0 }
+  .after-label { right: 0 }
+  .side-by-side .label { width: calc((100% - 2vw) / 2); text-align: center }
+  #caption { display: grid; place-content: center; text-align: center; padding: 0 3vw; overflow-wrap: anywhere }
+</style>
+<body>
+<div id="stage"><div id="images"></div></div>
+<div id="caption"></div>
+<script>
+  const stage = document.getElementById("stage");
+  const images = document.getElementById("images");
+  const caption = document.getElementById("caption");
+  let afterPane;
+  let divider;
+  let labels;
+  let mode;
+
+  async function loadScene(scene) {
+    mode = scene.mode;
+    images.className = mode;
+    images.replaceChildren();
+    caption.textContent = scene.caption ?? "";
+    const bounds = stage.getBoundingClientRect();
+    const widthBudget = mode === "wipe" ? bounds.width - innerWidth * .04 : (bounds.width - innerWidth * .06) / 2;
+    const scale = Math.min(widthBudget / scene.viewport.width, (bounds.height - innerHeight * .09) / scene.viewport.height);
+    for (const side of ["before", "after"]) {
+      const pane = document.createElement("div");
+      pane.className = `pane ${side}`;
+      pane.style.width = `${Math.floor(scene.viewport.width * scale)}px`;
+      pane.style.height = `${Math.floor(scene.viewport.height * scale)}px`;
+      const image = new Image();
+      image.src = scene[side];
+      await image.decode();
+      if (image.naturalWidth !== scene.viewport.width * 2 || image.naturalHeight !== scene.viewport.height * 2) {
+        throw new Error(`Unexpected screenshot size for ${scene.id} ${side}.`);
+      }
+      pane.append(image);
+      images.append(pane);
+      if (side === "after") afterPane = pane;
+    }
+    divider = document.createElement("div");
+    divider.className = "divider";
+    images.append(divider);
+    labels = ["before", "after"].map(side => {
+      const label = document.createElement("span");
+      label.className = `label ${side}-label`;
+      label.textContent = scene.labels[side];
+      images.append(label);
+      return label;
+    });
+    await document.fonts.ready;
+    if (caption.scrollHeight > caption.clientHeight) throw new Error(`Caption is too long for ${scene.id}.`);
+    setTime(0);
+  }
+
+  function setTime(progress) {
+    if (mode !== "wipe") {
+      divider.hidden = true;
+      return;
+    }
+    const fraction = Math.max(0, Math.min(1, (progress - .22) / .55));
+    const left = 100 * (1 - fraction * fraction * (3 - 2 * fraction));
+    afterPane.style.clipPath = `inset(0 0 0 ${left}%)`;
+    divider.style.left = `${left}%`;
+    divider.hidden = fraction === 0 || fraction === 1;
+    const width = images.clientWidth;
+    labels[0].style.visibility = width * left / 100 < labels[0].offsetWidth ? "hidden" : "visible";
+    labels[1].style.visibility = width * (100 - left) / 100 < labels[1].offsetWidth ? "hidden" : "visible";
+  }
+</script>
+</body>
+</html>

@@ -1,0 +1,22 @@
+{
+  "width": 1728,
+  "height": 1080,
+  "viewport": { "width": 864, "height": 540 },
+  "scenes": [
+    {
+      "id": "queue",
+      "mode": "wipe",
+      "ready": "main h1",
+      "caption": "The queue action and card edges are easier to see.",
+      "seconds": 4
+    },
+    {
+      "id": "narrow",
+      "mode": "side-by-side",
+      "viewport": { "width": 423, "height": 730 },
+      "ready": "main h1",
+      "caption": "On narrow screens, To review comes first.",
+      "seconds": 3
+    }
+  ]
+}

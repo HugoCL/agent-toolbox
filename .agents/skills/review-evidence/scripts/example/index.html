@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Review queue</title>
+<style>
+  * { box-sizing: border-box }
+  body { margin: 0; padding: 32px; background: #eff2ed; color: #17291f; font: 16px/1.45 system-ui, sans-serif }
+  main { max-width: 820px; margin: auto }
+  h1 { font-size: 36px; letter-spacing: -.04em; margin: 0 }
+  p { margin: 4px 0 20px }
+  button { background: #245740; color: white; border: 0; border-radius: 8px; padding: 9px 14px; font: inherit; cursor: pointer }
+  .toolbar { display: flex; justify-content: space-between; align-items: center; gap: 12px }
+  .board { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px }
+  section { border-radius: 14px; background: white; padding: 18px; min-height: 255px; border: 1px solid #c8d3c8 }
+  h2 { margin: 0 0 12px; font-size: 18px }
+  .card { border: 1px solid #bacabd; background: #f5f8f4; border-radius: 9px; padding: 12px; margin-top: 8px; cursor: grab }
+  .card strong, .card span { display: block }
+  .card span { font-size: 13px }
+  .editing section { border: 1px dashed #517660 }
+  :focus-visible { outline: 3px solid #a74312; outline-offset: 3px }
+  [data-variant="before"] button { background: #5a625b }
+  [data-variant="before"] .card { border-color: #d3d9d3; background: #fff }
+  [data-variant="before"] .card span { color: #59665d }
+  #status { margin-top: 12px }
+  ::view-transition-old(root), ::view-transition-new(root) { animation-duration: 220ms }
+  @media (max-width: 500px) {
+    body { padding: 16px }
+    .board { grid-template-columns: 1fr }
+    [data-variant="before"] .board section:last-child { grid-row: 1 }
+  }
+</style>
+<body data-variant="after">
+<main>
+  <div class="toolbar">
+    <h1>Review queue</h1>
+    <button type="button" aria-pressed="false">Edit queue</button>
+  </div>
+  <p>Move seeded demo cards through design review.</p>
+  <div class="board">
+    <section aria-label="To review">
+      <h2>To review</h2>
+      <div class="card" id="invite"><strong>Invitation flow</strong><span>Design · 2 screens</span></div>
+      <div class="card" id="search"><strong>Search filters</strong><span>Design · 1 screen</span></div>
+    </section>
+    <section aria-label="Ready">
+      <h2>Ready</h2>
+      <div class="card" id="dashboard"><strong>Dashboard spacing</strong><span>Design · 3 screens</span></div>
+    </section>
+  </div>
+  <p id="status" role="status">Queue saved.</p>
+</main>
+<script>
+  const button = document.querySelector("button");
+  const board = document.querySelector(".board");
+  const status = document.querySelector("#status");
+  function toggleEdit() {
+    const editing = board.classList.toggle("editing");
+    button.textContent = editing ? "Save queue" : "Edit queue";
+    button.setAttribute("aria-pressed", editing);
+    status.textContent = editing ? "Editing the queue." : "Queue saved.";
+    document.querySelectorAll(".card").forEach(card => { card.draggable = editing; });
+  }
+  button.addEventListener("click", () => {
+    if (document.startViewTransition) document.startViewTransition(toggleEdit);
+    else toggleEdit();
+  });
+  document.querySelectorAll(".card").forEach(card => {
+    card.addEventListener("dragstart", event => event.dataTransfer.setData("text/plain", card.id));
+  });
+  document.querySelectorAll("section").forEach(lane => {
+    lane.addEventListener("dragover", event => {
+      if (board.classList.contains("editing")) event.preventDefault();
+    });
+    lane.addEventListener("drop", event => {
+      event.preventDefault();
+      const card = document.getElementById(event.dataTransfer.getData("text/plain"));
+      if (card?.matches(".card")) lane.append(card);
+      if (card?.matches(".card")) status.textContent = `${card.querySelector("strong").textContent} moved.`;
+    });
+  });
+</script>
+</body>
+</html>

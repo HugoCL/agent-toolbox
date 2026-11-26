@@ -14,7 +14,7 @@
     },
     "notes": [
       "Written and edited in place under `.agents/skills/<name>/`. `pnpm skills:sync` never touches these folders, they are not in `skills-lock.json` and they get no content hash check. `pnpm skills:check` still validates their frontmatter (`name` matches the folder, `description` is not empty).",
-      "`discover`, `subagent-routing` and `harness-map` are written here. `review-evidence` is written separately and only listed."
+      "`review-evidence` ships scripts (a Playwright recorder, a before and after renderer, a verifier and a GIF helper). They install nothing: they resolve Playwright from the project they run in and need `ffmpeg`, `ffprobe` and ImageMagick on PATH."
     ],
     "limitations": []
   },

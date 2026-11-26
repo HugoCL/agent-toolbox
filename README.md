@@ -2,12 +2,12 @@
 
 Skills for coding agents. You install them into the repos you work in, so Codex, T3 Code, Orca and Claude Code follow the same workflows: plan, implement, verify, review, open a PR, and merge only when the repo's rules are met.
 
-The repo holds no app. It holds skill folders under `.agents/skills/`, a script that vendors skills from upstream repos at pinned commits, a way to keep local patches on top of them, and an installer. The pipeline comes from `hackathon-toolbox`.
+The repo holds no app. It holds skill folders under `.agents/skills/`, a script that vendors skills from upstream repos at pinned commits, a way to keep local patches on top of them, and an installer.
 
 ## Install into a repo
 
 ```sh
-git clone <repo-url> agent-toolbox && cd agent-toolbox
+git clone https://github.com/HugoCL/agent-toolbox.git && cd agent-toolbox
 pnpm install
 pnpm skills:install --target ~/work/my-repo --collections toolbox,tstack,cursor-team-kit
 ```
@@ -51,7 +51,7 @@ The generated catalog, with limits and local patches, is in `docs/skills.md`.
 
 ## Start with these three
 
-1. `review-evidence`: evidence for a review. Read its `SKILL.md`.
+1. `review-evidence`: a screenshot, a before and after, or a short captioned video of the change working, attached to the PR. Demo data only.
 2. `make-pr-easy-to-review`: shapes the branch and PR so a person can review it.
 3. `sol-loop`: a Sol reviewer checks the change in a loop before the PR.
 

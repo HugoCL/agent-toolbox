@@ -21,7 +21,7 @@ Repo skills live in `.agents/skills/<name>/SKILL.md`. Pick one with `$` followed
 | --- | --- | --- |
 | `$discover` | toolbox | Find out what this session and repo can actually do before a workflow assumes it. |
 | `$harness-map` | toolbox | Adapt a skill or instruction when it names a tool or path this harness lacks, including orchestrator_capabilities, delegate_task, task_status, watch_pull_request, unwatch_pull_request, create_issue... |
-| `$review-evidence` | toolbox | Placeholder. |
+| `$review-evidence` | toolbox | Capture evidence for a PR with visible behavior, when asked for a demo, capture, recording, GIF, or before and after comparison, or when a reviewer asks to see a change working. |
 | `$subagent-routing` | toolbox | Choose models and reasoning effort for subagents launched by sol-loop, poteto-mode, swarm, arena, dispatching-parallel-agents, or other delegation workflows, using the providers that $discover found. |
 | `$architect` | pstack | Sketch types, signatures, and module structure before code, then stay in the loop while implementation fills in. |
 | `$arena` | pstack | Spawn N parallel candidates at the same task, pick a base, graft the strongest parts of the losers into it. |
@@ -122,7 +122,7 @@ Repo skills live in `.agents/skills/<name>/SKILL.md`. Pick one with `$` followed
 Selection:
 
 - Written and edited in place under `.agents/skills/<name>/`. `pnpm skills:sync` never touches these folders, they are not in `skills-lock.json` and they get no content hash check. `pnpm skills:check` still validates their frontmatter (`name` matches the folder, `description` is not empty).
-- `discover`, `subagent-routing` and `harness-map` are written here. `review-evidence` is written separately and only listed.
+- `review-evidence` ships scripts (a Playwright recorder, a before and after renderer, a verifier and a GIF helper). They install nothing: they resolve Playwright from the project they run in and need `ffmpeg`, `ffprobe` and ImageMagick on PATH.
 
 Limitations:
 
