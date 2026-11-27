@@ -29,7 +29,7 @@ Before a workflow assumes a model, a tool, a browser or a merge rule, run `$disc
 | Id | Skills | Kind |
 | --- | --- | --- |
 | `toolbox` | `discover`, `subagent-routing`, `harness-map`, `review-evidence` | First-party, edited in place |
-| `tstack` | `babysit-pr`, `file-pr`, `leaving-pr-comments`, `modernize`, `sol-loop`, `takeover` | Vendored |
+| `tstack` | `babysit-pr`, `file-pr`, `full-send`, `full-stop`, `leaving-pr-comments`, `modernize`, `sol-loop`, `takeover` | Vendored, with a patch on `full-send` |
 | `cursor-team-kit` | `thermo-nuclear-code-quality-review`, `make-pr-easy-to-review`, `deslop`, `control-ui`, `control-cli` | Vendored |
 | `pstack` | 59 skills of the Claude Code tree, plus `.agents/docs` and `.agents/agents` | Vendored, with patches |
 | `superpowers` | 15 skills | Vendored |
@@ -46,7 +46,7 @@ Before a workflow assumes a model, a tool, a browser or a merge rule, run `$disc
 | Verify | `$verification-before-completion`, `$control-ui`, `$control-cli`, `$review-evidence` |
 | Before review | `$deslop`, then `$make-pr-easy-to-review` |
 | Review | `$sol-loop`, `$thermo-nuclear-code-quality-review`, `$requesting-code-review`, `$ponytail-review`. Seats and models per `$subagent-routing` |
-| PR | `$file-pr`, `$leaving-pr-comments`, `$babysit-pr`, `$modernize` |
+| PR | `$file-pr`, `$leaving-pr-comments`, `$babysit-pr`, `$modernize`. `$full-stop` runs review, filing and babysitting in one go and stops with the PR ready |
 | Feedback | `$receiving-code-review` |
 | Hand off | The giver runs `$poteto-mode` "Pause safely". The receiver runs `$takeover` |
 

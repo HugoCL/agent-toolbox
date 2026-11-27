@@ -90,6 +90,8 @@
     "skills": [
       "babysit-pr",
       "file-pr",
+      "full-send",
+      "full-stop",
       "leaving-pr-comments",
       "modernize",
       "sol-loop",
@@ -101,10 +103,13 @@
     },
     "limitations": [
       "`sol-loop` uses T3 Code's `orchestrator_capabilities` and `delegate_task` to reach a Sol model. Elsewhere it needs a Sol subagent, or it reports the blocker.",
-      "`babysit-pr` uses T3 Code's `watch_pull_request`, and falls back to `scripts/pr-wait` everywhere else. `pr-wait` needs Python 3 and an authenticated `gh`."
+      "`babysit-pr` uses T3 Code's `watch_pull_request`, and falls back to `scripts/pr-wait` everywhere else. `pr-wait` needs Python 3 and an authenticated `gh`.",
+      "A local patch on `full-send` adds the repository's required approvals to its merge gate and drops the line that let it ignore a review asking for human review, so it merges only under the merge rule in `$discover`.",
+      "`full-stop` depends on `full-send`: install both (`--skills full-send,full-stop`), or `full-stop` points at a file that is not there."
     ],
     "notes": [
-      "Six of the nine skills of `t3dotgg/tstack`: `babysit-pr`, `file-pr`, `leaving-pr-comments`, `modernize`, `sol-loop`, `takeover`. `council` and `full-send` are left out because the team's models all come from one provider, and `full-stop` only wraps `full-send`."
+      "Eight of the nine skills of `t3dotgg/tstack`: `babysit-pr`, `file-pr`, `full-send`, `full-stop`, `leaving-pr-comments`, `modernize`, `sol-loop`, `takeover`. `council` is left out because it asks for models from three providers and the team works with one.",
+      "`full-stop` runs the whole PR flow (prove, `sol-loop`, `file-pr`, `babysit-pr`) and stops with the PR ready, never merging. It reads `../full-send/SKILL.md` for that flow, so `full-send` ships with it."
     ]
   },
   {

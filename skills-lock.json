@@ -193,6 +193,30 @@
       "computedHash": "7e24d821d45b8f10773edd9f1a4be2fac90eedae4f8fc8e70e34e27e44d3f3c0",
       "installMode": "copy"
     },
+    "full-send": {
+      "source": "t3dotgg/tstack",
+      "ref": "11e37a74d0a6868c121cd0910ab2b3bd9873b92a",
+      "commit": "11e37a74d0a6868c121cd0910ab2b3bd9873b92a",
+      "sourceType": "github",
+      "skillPath": "skills/full-send/SKILL.md",
+      "computedHash": "8de3daf170c6759cf3148eb7eeb02a7040164fd50320fde178038745adf9ac0f",
+      "installMode": "copy",
+      "patches": [
+        {
+          "file": "1-require-repository-approvals.patch",
+          "sha256": "95587ee053cdaf9086cfa4277e030ca17f18e6202b6ef03ed3755739c26be2dd"
+        }
+      ]
+    },
+    "full-stop": {
+      "source": "t3dotgg/tstack",
+      "ref": "11e37a74d0a6868c121cd0910ab2b3bd9873b92a",
+      "commit": "11e37a74d0a6868c121cd0910ab2b3bd9873b92a",
+      "sourceType": "github",
+      "skillPath": "skills/full-stop/SKILL.md",
+      "computedHash": "97cd08646e1f9bbb89bf18bf131982ee66df7834cce071bc5385e8fc4f5a60a9",
+      "installMode": "copy"
+    },
     "how": {
       "source": "cursor/plugins",
       "ref": "b7b93c36be9bcc36a74db438e0fd385d660bc559",
