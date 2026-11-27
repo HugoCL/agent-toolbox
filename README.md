@@ -41,7 +41,7 @@ OpenAI's guidance for GPT-6 says that when too many skills are installed, Codex 
 | Id | Upstream | Skills | Use it for |
 | --- | --- | --- | --- |
 | `toolbox` | this repo | 4 | `discover`, `subagent-routing`, `harness-map`, `review-evidence` |
-| `tstack` | [t3dotgg/tstack](https://github.com/t3dotgg/tstack) | 6 | `sol-loop`, PR filing, babysitting, takeover, rebasing. `full-send`, `full-stop` and `council` are left out |
+| `tstack` | [t3dotgg/tstack](https://github.com/t3dotgg/tstack) | 8 | `sol-loop`, PR filing, babysitting, takeover, rebasing, and `full-stop` to run the whole PR flow and stop before the merge (it needs `full-send`, patched to merge only with the required approvals). `council` is left out |
 | `cursor-team-kit` | [cursor/plugins](https://github.com/cursor/plugins) | 5 | `make-pr-easy-to-review`, `deslop`, `thermo-nuclear-code-quality-review`, `control-ui`, `control-cli` |
 | `pstack` | [cursor/plugins](https://github.com/cursor/plugins) | 59 | `poteto-mode` playbooks and the principle skills. Large: install it only if you use it |
 | `superpowers` | [obra/superpowers](https://github.com/obra/superpowers) | 15 | Brainstorming, plans, TDD, debugging, subagent-driven development |

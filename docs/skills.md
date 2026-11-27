@@ -11,7 +11,7 @@ Repo skills live in `.agents/skills/<name>/SKILL.md`. Pick one with `$` followed
 | Toolbox (first-party) | `toolbox` | this repo | MIT (`licenses/toolbox.txt`) | 4 |
 | pstack (Claude Code tree) | `pstack` | [cursor/plugins](https://github.com/cursor/plugins) | MIT (`licenses/pstack.txt`) | 59 |
 | Cursor Team Kit | `cursor-team-kit` | [cursor/plugins](https://github.com/cursor/plugins) | MIT (`licenses/cursor-team-kit.txt`) | 5 |
-| tstack | `tstack` | [t3dotgg/tstack](https://github.com/t3dotgg/tstack) | MIT (`licenses/tstack.txt`) | 6 |
+| tstack | `tstack` | [t3dotgg/tstack](https://github.com/t3dotgg/tstack) | MIT (`licenses/tstack.txt`) | 8 |
 | Superpowers | `superpowers` | [obra/superpowers](https://github.com/obra/superpowers) | MIT (`licenses/superpowers.txt`) | 15 |
 | Ponytail (skills only) | `ponytail` | [DietrichGebert/ponytail](https://github.com/DietrichGebert/ponytail) | MIT (`licenses/ponytail.txt`) | 6 |
 
@@ -89,6 +89,8 @@ Repo skills live in `.agents/skills/<name>/SKILL.md`. Pick one with `$` followed
 | `$thermo-nuclear-code-quality-review` | cursor-team-kit | Run an extremely strict maintainability review for abstraction quality, giant files, and spaghetti-condition growth. |
 | `$babysit-pr` | tstack | Monitor a pull request through review and CI. |
 | `$file-pr` | tstack | File a concise pull request. |
+| `$full-send` | tstack | Trigger this if the user says 'full send'. |
+| `$full-stop` | tstack | Trigger this if the user says 'full stop', even as a closing "Full stop." that reads like emphasis. |
 | `$leaving-pr-comments` | tstack | Use whenever leaving comments on GitHub. |
 | `$modernize` | tstack | For getting old prs up to date. |
 | `$sol-loop` | tstack | Use when the user says "sol loop". |
@@ -178,16 +180,20 @@ Limitations:
 
 Selection:
 
-- Six of the nine skills of `t3dotgg/tstack`: `babysit-pr`, `file-pr`, `leaving-pr-comments`, `modernize`, `sol-loop`, `takeover`. `council` and `full-send` are left out because the team's models all come from one provider, and `full-stop` only wraps `full-send`.
+- Eight of the nine skills of `t3dotgg/tstack`: `babysit-pr`, `file-pr`, `full-send`, `full-stop`, `leaving-pr-comments`, `modernize`, `sol-loop`, `takeover`. `council` is left out because it asks for models from three providers and the team works with one.
+- `full-stop` runs the whole PR flow (prove, `sol-loop`, `file-pr`, `babysit-pr`) and stops with the PR ready, never merging. It reads `../full-send/SKILL.md` for that flow, so `full-send` ships with it.
 
 Local patches (applied by `pnpm skills:sync` after fetching upstream, kept in `scripts/skills/patches/`):
 
 - `babysit-pr`, `1-require-repository-approvals.patch`: Keep the waiter's monitoring result separate from the repository approval gate.
+- `full-send`, `1-require-repository-approvals.patch`: Merge only with the repository's required approvals, and never dismiss a request for human review.
 
 Limitations:
 
 - `sol-loop` uses T3 Code's `orchestrator_capabilities` and `delegate_task` to reach a Sol model. Elsewhere it needs a Sol subagent, or it reports the blocker.
 - `babysit-pr` uses T3 Code's `watch_pull_request`, and falls back to `scripts/pr-wait` everywhere else. `pr-wait` needs Python 3 and an authenticated `gh`.
+- A local patch on `full-send` adds the repository's required approvals to its merge gate and drops the line that let it ignore a review asking for human review, so it merges only under the merge rule in `$discover`.
+- `full-stop` depends on `full-send`: install both (`--skills full-send,full-stop`), or `full-stop` points at a file that is not there.
 
 ### Superpowers
 
